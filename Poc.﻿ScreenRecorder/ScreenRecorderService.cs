@@ -1,4 +1,5 @@
-﻿using ScreenRecorderLib;
+﻿using NAudio.CoreAudioApi;
+using ScreenRecorderLib;
 using System.Diagnostics;
 
 namespace Poc._﻿ScreenRecorder
@@ -19,8 +20,9 @@ namespace Poc._﻿ScreenRecorder
         {
             var audioInputDevices = Recorder.GetSystemAudioDevices(AudioDeviceSource.InputDevices);
             var audioOutputDevices = Recorder.GetSystemAudioDevices(AudioDeviceSource.OutputDevices);
-            string selectedAudioInputDevice = audioInputDevices.Count > 0 ? audioInputDevices.First().DeviceName : null;
-            string selectedAudioOutputDevice = audioOutputDevices.Count > 0 ? audioOutputDevices.First().DeviceName : null;
+            string selectedAudioInputDevice = GetDefaultAudioInputDevice();
+            string selectedAudioOutputDevice = GetDefaultAudioOutputDevice();
+
 
             var opts = new RecorderOptions
             {
@@ -38,6 +40,20 @@ namespace Poc._﻿ScreenRecorder
             _recorder.OnRecordingFailed += Rec_OnRecordingFailed;
             _recorder.OnRecordingComplete += Rec_OnRecordingComplete;
             _recorder.OnStatusChanged += Rec_OnStatusChanged;
+        }
+
+        private string GetDefaultAudioInputDevice()
+        {
+            var enumerator = new MMDeviceEnumerator();
+            MMDevice defaultDevice = enumerator.GetDefaultAudioEndpoint(DataFlow.Capture, Role.Communications);
+            return defaultDevice.FriendlyName;
+        }
+
+        private string GetDefaultAudioOutputDevice()
+        {
+            var enumerator = new MMDeviceEnumerator();
+            MMDevice defaultDevice = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Console);
+            return defaultDevice.FriendlyName; 
         }
 
         public void StartRecording()
@@ -112,6 +128,7 @@ namespace Poc._﻿ScreenRecorder
             Console.WriteLine();
             Console.WriteLine("Press any key to exit");
         }
+
 
     }
 }
