@@ -1,8 +1,12 @@
 ﻿using NAudio.CoreAudioApi;
 using ScreenRecorderLib;
 using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.IO;
 
-namespace Poc._﻿ScreenRecorder
+namespace Poc._ScreenRecorder
 {
     public class ScreenRecorderService
     {
@@ -23,6 +27,7 @@ namespace Poc._﻿ScreenRecorder
             string selectedAudioInputDevice = GetDefaultAudioInputDevice();
             string selectedAudioOutputDevice = GetDefaultAudioOutputDevice();
 
+            var displaySources = Recorder.GetDisplays();
 
             var opts = new RecorderOptions
             {
@@ -33,7 +38,15 @@ namespace Poc._﻿ScreenRecorder
                     IsAudioEnabled = true,
                     IsInputDeviceEnabled = true,
                     IsOutputDeviceEnabled = true,
-                }
+                },
+                OutputOptions = new OutputOptions
+                {
+                    OutputFrameSize = new ScreenSize(1920, 1080)
+                },
+                SourceOptions = new SourceOptions
+                {
+                    RecordingSources = new List<RecordingSourceBase>(displaySources)
+                },
             };
 
             _recorder = Recorder.CreateRecorder(opts);
@@ -44,17 +57,34 @@ namespace Poc._﻿ScreenRecorder
 
         private string GetDefaultAudioInputDevice()
         {
-            var enumerator = new MMDeviceEnumerator();
-            MMDevice defaultDevice = enumerator.GetDefaultAudioEndpoint(DataFlow.Capture, Role.Communications);
-            return defaultDevice.FriendlyName;
+            try
+            {
+                var enumerator = new MMDeviceEnumerator();
+                MMDevice defaultDevice = enumerator.GetDefaultAudioEndpoint(DataFlow.Capture, Role.Communications);
+                return defaultDevice.FriendlyName;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro ao obter o dispositivo de entrada de áudio: {ex.Message}");
+                return "Erro ao obter dispositivo de entrada de áudio";
+            }
         }
 
         private string GetDefaultAudioOutputDevice()
         {
-            var enumerator = new MMDeviceEnumerator();
-            MMDevice defaultDevice = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Console);
-            return defaultDevice.FriendlyName; 
+            try
+            {
+                var enumerator = new MMDeviceEnumerator();
+                MMDevice defaultDevice = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Console);
+                return defaultDevice.FriendlyName;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro ao obter o dispositivo de saída de áudio: {ex.Message}");
+                return "Erro ao obter dispositivo de saída de áudio";
+            }
         }
+
 
         public void StartRecording()
         {
@@ -99,7 +129,7 @@ namespace Poc._﻿ScreenRecorder
                     Console.WriteLine("Recording started");
                     Console.WriteLine("Press ESC to stop recording");
                     break;
-                //case RecorderStatus.Paused:
+                    //case RecorderStatus.Paused:
                 //    Console.WriteLine("Recording paused");
                 //    break;
                 case RecorderStatus.Finishing:
@@ -128,7 +158,5 @@ namespace Poc._﻿ScreenRecorder
             Console.WriteLine();
             Console.WriteLine("Press any key to exit");
         }
-
-
     }
 }
