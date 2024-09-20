@@ -5,18 +5,30 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
+using Microsoft.Extensions.Configuration;
 
 namespace Poc._ScreenRecorder
 {
     public class ScreenRecorderService
     {
+        [DllImport("user32.dll")]
+        static extern int GetSystemMetrics(int nIndex);
+
+        public const int SM_CXSCREEN = 0; 
+        public const int SM_CYSCREEN = 1; 
+
         private bool _isRecording;
         private Stopwatch _stopWatch;
         private Recorder _recorder;
         private CancellationTokenSource _cts;
+        private readonly string _outputFolder;
+        private readonly string _frameRate;
 
-        public ScreenRecorderService()
+        public ScreenRecorderService(IConfiguration configuration)
         {
+            _outputFolder = configuration.GetSection("FolderVideos").Value;
+            _frameRate = configuration.GetSection("FrameRate").Value;
             InitializeRecorder();
         }
 
@@ -28,6 +40,10 @@ namespace Poc._ScreenRecorder
             string selectedAudioOutputDevice = GetDefaultAudioOutputDevice();
 
             var displaySources = Recorder.GetDisplays();
+
+            var screenSize = GetScreenSize();
+            int width = screenSize.Width;
+            int height = screenSize.Height;
 
             var opts = new RecorderOptions
             {
@@ -41,7 +57,7 @@ namespace Poc._ScreenRecorder
                 },
                 OutputOptions = new OutputOptions
                 {
-                    OutputFrameSize = new ScreenSize(1920, 1080)
+                    OutputFrameSize = new ScreenSize(width, height)
                 },
                 SourceOptions = new SourceOptions
                 {
@@ -49,10 +65,22 @@ namespace Poc._ScreenRecorder
                 },
             };
 
+            opts.VideoEncoderOptions = new VideoEncoderOptions();
+            opts.VideoEncoderOptions.Framerate = int.Parse(_frameRate);
+            opts.VideoEncoderOptions.Encoder = new H264VideoEncoder { BitrateMode = H264BitrateControlMode.Quality, EncoderProfile = H264Profile.Baseline };
+            opts.VideoEncoderOptions.Quality = 40;
+
             _recorder = Recorder.CreateRecorder(opts);
             _recorder.OnRecordingFailed += Rec_OnRecordingFailed;
             _recorder.OnRecordingComplete += Rec_OnRecordingComplete;
             _recorder.OnStatusChanged += Rec_OnStatusChanged;
+        }
+
+        private (int Width, int Height) GetScreenSize()
+        {
+            int width = GetSystemMetrics(SM_CXSCREEN); 
+            int height = GetSystemMetrics(SM_CYSCREEN); 
+            return (width, height);
         }
 
         private string GetDefaultAudioInputDevice()
@@ -89,7 +117,8 @@ namespace Poc._ScreenRecorder
         public void StartRecording()
         {
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH-mm");
-            string filePath = Path.Combine(Path.GetTempPath(), "ScreenRecorder", $"{timestamp} {Guid.NewGuid()}.mp4");
+            string fileName = $"{timestamp} {Guid.NewGuid()}.mp4";
+            string filePath = Path.Combine(_outputFolder, fileName);
             _recorder.Record(filePath);
             _cts = new CancellationTokenSource();
             var token = _cts.Token;

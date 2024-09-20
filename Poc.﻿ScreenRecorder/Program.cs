@@ -1,14 +1,18 @@
 ﻿using Poc._ScreenRecorder;
+using Microsoft.Extensions.Configuration;
 
 namespace Poc.ScreenRecorder
 {
     class Program
     {
+        internal static IConfiguration _iconfiguration;
         static void Main(string[] args)
         {
-            var recorderService = new ScreenRecorderService();
+            GetAppSettingsFile();
 
-            Console.WriteLine("Press ENTER to start recording or ESC to exit");
+            var recorderService = new ScreenRecorderService(_iconfiguration);
+
+            Console.WriteLine("Pressione ENTER para gravar ou ESC para sair");
             while (true)
             {
                 ConsoleKeyInfo info = Console.ReadKey(true);
@@ -35,6 +39,15 @@ namespace Poc.ScreenRecorder
 
             Console.WriteLine();
             Console.ReadKey();
+        }
+
+        static void GetAppSettingsFile()
+        {
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json",
+                    optional: false, reloadOnChange: true);
+            _iconfiguration = builder.Build();
         }
     }
 }
