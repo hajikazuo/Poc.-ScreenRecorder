@@ -54,6 +54,8 @@ namespace Poc._ScreenRecorder
                     IsAudioEnabled = true,
                     IsInputDeviceEnabled = true,
                     IsOutputDeviceEnabled = true,
+                    Bitrate = AudioBitrate.bitrate_96kbps,
+                    Channels = AudioChannels.Mono,
                 },
                 OutputOptions = new OutputOptions
                 {
@@ -68,7 +70,7 @@ namespace Poc._ScreenRecorder
             opts.VideoEncoderOptions = new VideoEncoderOptions();
             opts.VideoEncoderOptions.Framerate = int.Parse(_frameRate);
             opts.VideoEncoderOptions.Encoder = new H264VideoEncoder { BitrateMode = H264BitrateControlMode.Quality, EncoderProfile = H264Profile.Baseline };
-            opts.VideoEncoderOptions.Quality = 40;
+            opts.VideoEncoderOptions.Quality = 30;
 
             _recorder = Recorder.CreateRecorder(opts);
             _recorder.OnRecordingFailed += Rec_OnRecordingFailed;
