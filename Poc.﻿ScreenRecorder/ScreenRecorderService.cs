@@ -23,12 +23,14 @@ namespace Poc._ScreenRecorder
         private Recorder _recorder;
         private CancellationTokenSource _cts;
         private readonly string _outputFolder;
-        private readonly string _frameRate;
+        private readonly int _frameRate;
+        private readonly int _qualityVideo;
 
         public ScreenRecorderService(IConfiguration configuration)
         {
             _outputFolder = configuration.GetSection("FolderVideos").Value;
-            _frameRate = configuration.GetSection("FrameRate").Value;
+            _frameRate = configuration.GetValue<int>("FrameRate");
+            _qualityVideo = configuration.GetValue<int>("QualityVideo");
             InitializeRecorder();
         }
 
@@ -68,9 +70,9 @@ namespace Poc._ScreenRecorder
             };
 
             opts.VideoEncoderOptions = new VideoEncoderOptions();
-            opts.VideoEncoderOptions.Framerate = int.Parse(_frameRate);
+            opts.VideoEncoderOptions.Framerate = _frameRate;
             opts.VideoEncoderOptions.Encoder = new H264VideoEncoder { BitrateMode = H264BitrateControlMode.Quality, EncoderProfile = H264Profile.Baseline };
-            opts.VideoEncoderOptions.Quality = 30;
+            opts.VideoEncoderOptions.Quality = _qualityVideo;
 
             _recorder = Recorder.CreateRecorder(opts);
             _recorder.OnRecordingFailed += Rec_OnRecordingFailed;
